@@ -1,0 +1,53 @@
+#! /bin/bash
+
+#Current usage: Cit384-url hostname port URI
+
+process_body=FALSE
+
+SERVER_NAME=$1
+PORT=$2
+URI=$3
+
+IP_addr=$(host ${SERVER_NAME}) 
+
+#Build the Request payload
+cat <<EOF >/home/users14/eba19283/classes/cit384/request
+GET ${URI} HTTP/1.1
+host: ${SERVER_NAME}
+EOF
+
+# Establish a Socket
+# Send Request
+# Receive Payload
+socket ${SERVER_NAME} ${PORT} < /home/users14/eba19283/classes/cit384/request >/home/users14/eba19283/classes/cit384/payload
+
+cat /home/users14/eba19283/classes/cit384/payload | while read name value ; do
+    if [[ $name == "Content-type:" ]] ; then
+      if [[ $value == "application/x-html" ]] ; then
+  process_body=TRUE ; echo "process_body: $process_body"
+      fi
+    fi
+done </home/users14/eba19283/classes/cit384/payload
+echo "process_body: $process_body"
+
+cat /home/users14/eba19283/classes/cit384/payload | {
+  read name value ;
+  while [[ -n $name ]] ; do
+    read name value
+  done
+  # Found my blank line
+
+  while read line ; do
+    echo $line
+  done
+} >/home/users14/eba19283/classes/cit384/body
+
+process_body=TRUE
+
+# Based upon Content-type: do something: in this case
+if [[ $process_body == FALSE ]] ; then
+  :
+else
+  base64 -d | uncompress
+fi < /home/users14/eba19283/classes/cit384/body
+
